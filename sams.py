@@ -79,9 +79,13 @@ class CliArgumentParser():
             return False
             
         # Validate image base file name format
-        if not re.fullmatch(r"(\d\d\.){2}\d{4}\.b\d+", self.imagePath.stem):
+        match = re.fullmatch(r"((\d\d\.){2}\d{4})\.(b\d+)", self.imagePath.stem)
+        if not match:
             print("Image base file name does not match the required format")
             return False
+        
+        self.date = match.group(1)
+        self.batch_name = match.group(3)
 
         # Check if the xml file exists
         if not self.xmlPath.exists():
