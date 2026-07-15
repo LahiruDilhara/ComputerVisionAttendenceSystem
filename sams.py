@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 from rich_argparse import RichHelpFormatter
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 def parser():
     parser = argparse.ArgumentParser(
@@ -33,6 +34,15 @@ def validate(imagePath: Path, xmlPath: Path):
             print("Image file is not readable")
             return False
     except Exception as e:
+        print("Image file is not in correct format")
+        return False
+    
+    # Check whether xml file format correct
+    try:
+        tree = ET.parse(str(xmlPath))
+        root = tree.getroot()
+    except Exception as e:
+        print("XML file is not redable")
         print(e)
         return False
     return True
