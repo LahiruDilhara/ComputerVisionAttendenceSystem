@@ -17,13 +17,27 @@ def parser():
     args = parser.parse_args()
     return args.image, args.xml
 
+def validate(imagePath: Path, xmlPath: Path):
+    # Check if the image file exists
+    if not imagePath.exists():
+        print("Image file does not exist")
+        return False
+    # Check if the xml file exists
+    if not xmlPath.exists():
+        print("Xml file does not exist")
+        return False
+    return True
+
+def processAttendance():
+    
+    pass
 
 def main():
     
     (imagePath, xmlPath) = parser()
-    print(imagePath)
-    print(xmlPath)
-    pass
+    if not validate(imagePath,xmlPath):
+        return
+    processAttendance()
 
 
 
