@@ -17,10 +17,14 @@ class CliArgumentParser():
         self.imagePath = imagePath
         self.xmlPath = xmlPath
         self.showImage = showImage
+        self.date = ""
+        self.batch_name = ""
         valid = self.argumentValidator()
 
         if not valid:
             sys.exit(1)
+        self.parsedXML = self.xml_students()
+        self.students = self.parseStudentsForBatch()
         
 
     def cliArgumentParser(self):
@@ -94,8 +98,45 @@ class CliArgumentParser():
             print("XML Layout is invalid")
             return False
 
+    def xml_students(self) -> dict[str, dict[str, list[dict[str, str]]]]:
+        tree = ET.parse(str(self.xmlPath))
+        root = tree.getroot()
+        
+        batches_dict: dict[str, list[dict[str, str]]] = {}
+        
+        batches_node = root.find('batches')
+        if batches_node is not None:
+            for batch_node in batches_node:
+                batch_name = batch_node.tag
+                students_list: list[dict[str, str]] = []
+                
+                students_node = batch_node.find('students')
+                if students_node is not None:
+                    for student_node in students_node.findall('student'):
+                        index_node = student_node.find('index')
+                        name_node = student_node.find('name')
+                        
+                        if index_node is not None and name_node is not None:
+                            students_list.append({
+                                "index": index_node.text or "",
+                                "name": name_node.text or ""
+                            })
+                
+                batches_dict[batch_name] = students_list
+        return batches_dict
+    
+    def parseStudentsForBatch(self):
+        if self.batch_name not in self.parsedXML:
+            print("The Given Batch not found in xml file")
+            sys.exit(1)
+        
+        if self.parsedXML[self.batch_name] is None:
+            print("No students found for the batch")
+            sys.exit(1)
+        
+        return self.parsedXML[self.batch_name]
 
-def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)->list:
+def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count)->list:
     print("Starting the processing")
     image = cv2.imread(str(imagePath),cv2.IMREAD_GRAYSCALE)
     color_image = cv2.imread(str(imagePath))
@@ -104,7 +145,6 @@ def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)-
     print("Applied the gaussian blur to reduce noice")
     binary_image = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,21,2)
     print("Applied adaptive threshold to convert image to black and white")
-
 
     print("Creating horizontal kernel to identify horizontal lines")
     hk = cv2.getStructuringElement(cv2.MORPH_RECT,(40,1))
@@ -158,17 +198,13 @@ def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)-
         if (x + w) > max_right_edge - right_edge_threshold:
             right_most_boxes.append(box)
     
-    if len(right_most_boxes) < attendance_box_count:
-        print("Didn't able to find {attendance_box_count} right signature boxes")
-        return []
-    
-    print("Identify the bottom 6 boxes")
-    bottom_6_boxes = reversed(right_most_boxes[0:attendance_box_count])
+    print(f"Identified right most boxes {len(right_most_boxes)}")
+    bottom_boxes = list(reversed(right_most_boxes[0:attendance_box_count]))
 
     print("Finding the signature identification inner boxes")
     innerPadding = 10
     signature_identification_boxes = []
-    for box in bottom_6_boxes:
+    for box in bottom_boxes:
         x, y, w, h, rect = box
         (cx, cy), (rw,rh), angle = rect
 
@@ -181,6 +217,8 @@ def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)-
         box_points = np.int32(box_points)
         
         signature_identification_boxes.append(box_points)
+    
+    print(f"Identified {len(signature_identification_boxes)} signature boxes")
     
     print("Add the pixel density ratio for each box")
     processed_signature_identification_boxes = []
@@ -214,14 +252,20 @@ def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)-
         print("Image saved")
     return signature_identified_points
 
-
 def main():
     args = CliArgumentParser()
     repository = AttendanceRepository()
-    attendanceList = processAttendance(args.imagePath,args.xmlPath,args.showImage)
-    print(attendanceList)
+    print()
+    attendanceList = processAttendance(args.imagePath,args.xmlPath,args.showImage,attendance_box_count=len(args.students))
+    if len(args.students)!= len(attendanceList):
+        print("Number of students and signature boxes are not matching")
+        sys.exit(1)
 
-
-
+    for index,student in enumerate(args.students):
+        attendance = True if attendanceList[index]["available"] else False
+        student_index = student["index"]
+        student_name = student["name"]
+        repository.markAttendance(student_index,student_name,args.batch_name,attendance,args.date)
+    
 if __name__ == "__main__":
     main()

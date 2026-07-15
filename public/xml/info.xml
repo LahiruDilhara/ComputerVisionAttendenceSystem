@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <nsbm>
     <batches>
-        <B15>
+        <b15>
             <students>
                 <student>
                     <index>10000409</index>
@@ -28,6 +28,6 @@
                     <name>Hansa Anuradha Wickramanayake</name>
                 </student>
             </students>
-        </B15>
+        </b15>
     </batches>
 </nsbm>
