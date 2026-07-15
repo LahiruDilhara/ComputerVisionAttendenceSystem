@@ -26,10 +26,19 @@ def validate(imagePath: Path, xmlPath: Path):
     if not xmlPath.exists():
         print("Xml file does not exist")
         return False
+    # Check whether image redable
+    try:
+        img = cv2.imread(str(imagePath))
+        if img is None:
+            print("Image file is not readable")
+            return False
+    except Exception as e:
+        print(e)
+        return False
     return True
 
 def processAttendance():
-    
+
     pass
 
 def main():
