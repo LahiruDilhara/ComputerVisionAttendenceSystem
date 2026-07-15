@@ -5,6 +5,32 @@ from rich import print
 from rich_argparse import RichHelpFormatter
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import sqlite3
+
+class Database():
+
+    def __init__(self,db_path = "attendance.db"):
+        self.connection = sqlite3.connect(db_path)
+        self.cursor = self.connection.cursor()
+    
+    def initTables(self):
+        print("Create the student table")
+        self.cursor.execute("""
+        CREATE TABLE IF NOT EXISTS student (
+            student_id TEXT PRIMARY KEY NOT NULL,
+            name TEXT NOT NULL
+        )
+        """)
+        self.cursor.execute("""
+        CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            status TEXT CHECK(status IN ('Present', 'Absent')),
+            FOREIGN KEY (student_id) REFERENCES student(student_id) ON DELETE CASCADE ON UPDATE CASCADE
+        )
+        """)
+        self.connection.commit()
 
 def parser():
     parser = argparse.ArgumentParser(
@@ -170,6 +196,7 @@ def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)-
 
 
 def main():
+    database = Database()
     (imagePath, xmlPath,showImage) = parser()
     if not validate(imagePath,xmlPath):
         return
