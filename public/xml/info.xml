@@ -1,2 +1,33 @@
-<html>
-</html>
+<?xml version="1.0"?>
+<nsbm>
+    <batches>
+        <B15>
+            <students>
+                <student>
+                    <index>10000409</index>
+                    <name>Dilshanika Perera</name>
+                </student>
+                <student>
+                    <index>10009301</index>
+                    <name>Shehan Aberathne</name>
+                </student>
+                <student>
+                    <index>10009302</index>
+                    <name>Chithrananda</name>
+                </student>
+                <student>
+                    <index>10009303</index>
+                    <name>Shashini Minosha De Silva</name>
+                </student>
+                <student>
+                    <index>10009304</index>
+                    <name>Udara Maduranga Liyanage</name>
+                </student>
+                <student>
+                    <index>10009306</index>
+                    <name>Hansa Anuradha Wickramanayake</name>
+                </student>
+            </students>
+        </B15>
+    </batches>
+</nsbm>

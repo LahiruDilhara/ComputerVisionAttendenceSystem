@@ -6,6 +6,7 @@ from rich_argparse import RichHelpFormatter
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import sqlite3
+import xmlschema
 
 class Database():
 
@@ -46,6 +47,20 @@ def parser():
     args = parser.parse_args()
     return args.image, args.xml, args.show_image
 
+def xml_format_validator(xmlPath:Path):
+    try:
+        schema = xmlschema.XMLSchema("xml_schema.xsd")
+        if schema.is_valid(str(xmlPath)):
+            print("XML file is valid according to the schema.")
+            return True
+        else:
+            print("XML file is invalid according to the schema.")
+            schema.validate(str(xmlPath))
+            return False
+    except Exception as e:
+        print("XML Layout is invalid")
+        return False
+
 def validate(imagePath: Path, xmlPath: Path):
     # Check if the image file exists
     if not imagePath.exists():
@@ -73,6 +88,10 @@ def validate(imagePath: Path, xmlPath: Path):
         print("XML file is not redable")
         print(e)
         return False
+        
+    if not xml_format_validator(xmlPath):
+        return False
+        
     return True
 
 def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)->list:
