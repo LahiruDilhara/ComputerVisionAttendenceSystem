@@ -15,10 +15,10 @@ def parser():
 
     parser.add_argument("image",type=Path,help="Path to the image file")
     parser.add_argument("xml",type=Path,help="Path to the student xml file")
-    parser.add_argument("-sh","--show-image",action="show",help="Show the image file after processing")
+    parser.add_argument("-sh","--show_image",action="store_true",help="Show the image file after processing")
 
     args = parser.parse_args()
-    return args.image, args.xml, args.show
+    return args.image, args.xml, args.show_image
 
 def validate(imagePath: Path, xmlPath: Path):
     # Check if the image file exists
@@ -51,12 +51,12 @@ def validate(imagePath: Path, xmlPath: Path):
 
 def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)->list:
     print("Starting the processing")
-    image = cv2.imread(imagePath,cv2.IMREAD_GRAYSCALE)
-    color_image = cv2.cvtColor(imagePath, cv2.COLOR_BGRA2BGR)
+    image = cv2.imread(str(imagePath),cv2.IMREAD_GRAYSCALE)
+    color_image = cv2.imread(str(imagePath))
     print("Read the image data")
     blurred_image = cv2.GaussianBlur(image, (11,11),0)
     print("Applied the gaussian blur to reduce noice")
-    binary_image = cv2.adaptiveThreshold(blurred_image, 255, cv2.adaptiveThreshold,cv2.THRESH_BINARY_INV,21,2)
+    binary_image = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,21,2)
     print("Applied adaptive threshold to convert image to black and white")
 
 
@@ -152,27 +152,29 @@ def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)-
     signature_density_threshold = 0.08
     for point in processed_signature_identification_boxes:
         if point["ratio"] > signature_density_threshold:
-            signature_identified_points.append({"point":point,"available":true})
+            signature_identified_points.append({"point":point,"available":True})
         else:
-            signature_identified_points.append({"point":point,"available":false})
+            signature_identified_points.append({"point":point,"available":False})
     
     print("Draw the green boxes on signature identified boxes for visual")
     if (showImage):
         for point in signature_identified_points:
-            cv2.drawChessboardCorners(color_image,[point["point"]],0, (0,255,0),2)
+            if point["available"]:
+                cv2.drawContours(color_image, [point["point"]["points"]], -1, (0,255,0), 2)
     
         print("Save image")
         output_file = "output.png"
         cv2.imwrite(output_file,color_image)
         print("Image saved")
+    return signature_identified_points
 
 
 def main():
-    
     (imagePath, xmlPath,showImage) = parser()
     if not validate(imagePath,xmlPath):
         return
-    processAttendance(imagePath,xmlPath,showImage)
+    attendanceList = processAttendance(imagePath,xmlPath,showImage)
+    print(attendanceList)
 
 
 
