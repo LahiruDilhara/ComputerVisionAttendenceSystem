@@ -7,19 +7,30 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 import sqlite3
 import xmlschema
+import re
+import sys
 
 class Database():
 
     def __init__(self,db_path = "attendance.db"):
         self.connection = sqlite3.connect(db_path)
         self.cursor = self.connection.cursor()
+        self.initTables()
     
     def initTables(self):
         print("Create the student table")
         self.cursor.execute("""
+        CREATE TABLE IF NOT EXISTS batch (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL
+        )
+        """)
+        self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS student (
             student_id TEXT PRIMARY KEY NOT NULL,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
+            batch_id INTEGER NOT NULL,
+            FOREIGN KEY (batch_id) REFERENCES batch(id) ON DELETE CASCADE ON UPDATE CASCADE
         )
         """)
         self.cursor.execute("""
@@ -32,67 +43,88 @@ class Database():
         )
         """)
         self.connection.commit()
-
-def parser():
-    parser = argparse.ArgumentParser(
-        description="Student Attendance Management System",
-        formatter_class=RichHelpFormatter,
-        usage="python3 sams.py [-h] <image_file> <xml_file>"
-    )
-
-    parser.add_argument("image",type=Path,help="Path to the image file")
-    parser.add_argument("xml",type=Path,help="Path to the student xml file")
-    parser.add_argument("-sh","--show_image",action="store_true",help="Show the image file after processing")
-
-    args = parser.parse_args()
-    return args.image, args.xml, args.show_image
-
-def xml_format_validator(xmlPath:Path):
-    try:
-        schema = xmlschema.XMLSchema("xml_schema.xsd")
-        if schema.is_valid(str(xmlPath)):
-            print("XML file is valid according to the schema.")
-            return True
-        else:
-            print("XML file is invalid according to the schema.")
-            schema.validate(str(xmlPath))
-            return False
-    except Exception as e:
-        print("XML Layout is invalid")
-        return False
-
-def validate(imagePath: Path, xmlPath: Path):
-    # Check if the image file exists
-    if not imagePath.exists():
-        print("Image file does not exist")
-        return False
-    # Check if the xml file exists
-    if not xmlPath.exists():
-        print("Xml file does not exist")
-        return False
-    # Check whether image redable
-    try:
-        img = cv2.imread(str(imagePath))
-        if img is None:
-            print("Image file is not readable")
-            return False
-    except Exception as e:
-        print("Image file is not in correct format")
-        return False
     
-    # Check whether xml file format correct
-    try:
-        tree = ET.parse(str(xmlPath))
-        root = tree.getroot()
-    except Exception as e:
-        print("XML file is not redable")
-        print(e)
-        return False
+
+class CliArgumentParser():
+    def __init__(self):
+        print("Parsing cli arguments")
+        (imagePath, xmlPath, showImage) = self.cliArgumentParser()
+        self.imagePath = imagePath
+        self.xmlPath = xmlPath
+        self.showImage = showImage
+        valid = self.argumentValidator()
+
+        if not valid:
+            sys.exit(1)
         
-    if not xml_format_validator(xmlPath):
-        return False
+
+    def cliArgumentParser(self):
+        parser = argparse.ArgumentParser(
+            description="Student Attendance Management System",
+            formatter_class=RichHelpFormatter,
+            usage="python3 sams.py [-h] <image_file> <xml_file>"
+        )
+
+        parser.add_argument("image",type=Path,help="Path to the image file")
+        parser.add_argument("xml",type=Path,help="Path to the student xml file")
+        parser.add_argument("-sh","--show_image",action="store_true",help="Show the image file after processing")
+
+        args = parser.parse_args()
+        return args.image, args.xml, args.show_image
+    
+    def argumentValidator(self):
+        # Check if the image file exists
+        if not self.imagePath.exists():
+            print("Image file does not exist")
+            return False
+            
+        # Validate image base file name format
+        if not re.fullmatch(r"(\d\d\.){2}\d{4}\.b\d+", self.imagePath.stem):
+            print("Image base file name does not match the required format")
+            return False
+
+        # Check if the xml file exists
+        if not self.xmlPath.exists():
+            print("Xml file does not exist")
+            return False
+        # Check whether image redable
+        try:
+            img = cv2.imread(str(self.imagePath))
+            if img is None:
+                print("Image file is not readable")
+                return False
+        except Exception as e:
+            print("Image file is not in correct format")
+            return False
         
-    return True
+        # Check whether xml file format correct
+        try:
+            tree = ET.parse(str(self.xmlPath))
+            root = tree.getroot()
+        except Exception as e:
+            print("XML file is not redable")
+            print(e)
+            return False
+            
+        if not self.xml_format_paser():
+            return False
+            
+        return True
+    
+    def xml_format_paser(self):
+        try:
+            schema = xmlschema.XMLSchema("xml_schema.xsd")
+            if schema.is_valid(str(self.xmlPath)):
+                print("XML file is valid according to the schema.")
+                return True
+            else:
+                print("XML file is invalid according to the schema.")
+                schema.validate(str(self.xmlPath))
+                return False
+        except Exception as e:
+            print("XML Layout is invalid")
+            return False
+
 
 def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)->list:
     print("Starting the processing")
@@ -215,11 +247,9 @@ def processAttendance(imagePath, xmlPath,showImage:bool,attendance_box_count=6)-
 
 
 def main():
+    args = CliArgumentParser()
     database = Database()
-    (imagePath, xmlPath,showImage) = parser()
-    if not validate(imagePath,xmlPath):
-        return
-    attendanceList = processAttendance(imagePath,xmlPath,showImage)
+    attendanceList = processAttendance(args.imagePath,args.xmlPath,args.showImage)
     print(attendanceList)
 
 
