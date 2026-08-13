@@ -3,8 +3,9 @@ from pathlib import Path
 
 
 class AttendanceQuery:
-   
 
+
+   
     def __init__(self, db_path="./db/attendance.db"):
         self.db_path = Path(db_path)
 
@@ -13,7 +14,7 @@ class AttendanceQuery:
             return None
         return sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
 
-    # ------------------------------------------------------------------ #
+    
     def studentHistory(self, student_id):
     
         connection = self._connect()

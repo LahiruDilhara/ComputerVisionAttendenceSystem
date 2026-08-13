@@ -1,5 +1,3 @@
-
-
 import itertools
 from pathlib import Path
 
@@ -13,6 +11,7 @@ from signature_matching import (
 )
 from student_records import StudentRecords
 
+#########################
 
 def collectSamples(images_dir, records):
     """Every normalised signature on every sheet, tagged with its owner."""
