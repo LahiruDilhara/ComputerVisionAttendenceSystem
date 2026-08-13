@@ -13,4 +13,7 @@ dependencies = [
     "rich-argparse>=1.8.0",
     "scikit-image>=0.26.0",
     "xmlschema>=4.3.2",
+    "scikit-image>=0.26.0",
+    "scipy>=1.16.0",         
+    "xmlschema>=4.3.2",
 ]

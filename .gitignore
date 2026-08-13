@@ -1,2 +1,5 @@
 .venv
 *.db
+__pycache__/
+public/output/
+output.png

@@ -22,6 +22,7 @@ dependencies = [
     { name = "rich" },
     { name = "rich-argparse" },
     { name = "scikit-image" },
+    { name = "scipy" },
     { name = "xmlschema" },
 ]
 
@@ -34,6 +35,7 @@ requires-dist = [
     { name = "rich", specifier = ">=15.0.0" },
     { name = "rich-argparse", specifier = ">=1.8.0" },
     { name = "scikit-image", specifier = ">=0.26.0" },
+    { name = "scipy", specifier = ">=1.16.0" },
     { name = "xmlschema", specifier = ">=4.3.2" },
 ]
 
